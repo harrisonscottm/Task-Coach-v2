@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<title>Task Coach</title>
+<style>
+:root{--bg:#0b1220;--card:#121c30;--card2:#18243c;--line:#26334d;--text:#e8eefc;--muted:#9fb0cc;--accent:#4f8cff;--good:#31c48d;--warn:#f6ad55;--bad:#f05252;--purple:#8b5cf6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:88px}
+header{position:sticky;top:0;z-index:5;background:rgba(11,18,32,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 16px}
+h1{margin:0;font-size:20px}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+main{padding:16px;max-width:760px;margin:0 auto}
+.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:17px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;border:0;border-radius:12px;padding:12px 14px;background:var(--card2);color:var(--text);cursor:pointer}
+button.primary{background:var(--accent);color:#fff;font-weight:650}
+button.ghost{background:transparent;border:1px solid var(--line)}
+button.small{padding:7px 10px;font-size:13px;border-radius:9px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:12px;border:1px solid var(--line);background:var(--card2);color:var(--muted)}
+.pill.on{color:#fff;border-color:transparent}
+.task{border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:12px;margin-bottom:10px}
+.task h3{margin:0 0 6px;font-size:16px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+input,select,textarea{width:100%;background:#0d1626;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+.q{border-radius:14px;padding:12px;min-height:96px;border:1px solid var(--line)}
+.q h4{margin:0 0 6px;font-size:14px}
+.q .count{font-size:22px;font-weight:700}
+.q1{background:#2a1b24;border-color:#5c2e3f}.q2{background:#242410;border-color:#5c5426}.q3{background:#1b2430;border-color:#2f4a68}.q4{background:#1d241d;border-color:#39543b}
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(11,18,32,.97);border-top:1px solid var(--line);display:flex;z-index:6}
+nav button{flex:1;background:none;border-radius:0;padding:10px 4px 14px;color:var(--muted);font-size:11px}
+nav button.active{color:#fff}
+nav span{display:block;font-size:20px;margin-bottom:2px}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:18px}
+.toast{position:fixed;left:16px;right:16px;bottom:96px;background:#1d2b45;border:1px solid var(--line);padding:12px;border-radius:12px;display:none;z-index:9}
+.badge{font-size:11px;padding:3px 7px;border-radius:999px;background:#253248;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<div class="spread">
+<div><h1>Task Coach</h1><div class="sub" id="syncStatus">Prototype • sample data • saved on this phone</div></div>
+<button class="small ghost" onclick="resetData()">Reset</button>
+</div>
+</header>
+<main>
+<section id="view-next" class="view active">
+<div class="card">
+<h2>How much time do you have?</h2>
+<div class="grid4">
+<button onclick="recommend(5)">5 min</button>
+<button onclick="recommend(15)">15 min</button>
+<button onclick="recommend(30)">30 min</button>
+<button onclick="recommend(60)">1 hour</button>
+</div>
+</div>
+<div id="recommendation"></div>
+<div class="card" id="classifyCard">
+<h2>Quick tidy-up</h2>
+<p class="sub" style="margin-top:0">Answer a couple of quick questions so recommendations get smarter.</p>
+<div id="classifyArea"></div>
+</div>
+</section>
+
+<section id="view-board" class="view">
+<div class="card">
+<h2>Priority board</h2>
+<p class="sub" style="margin-top:0">Importance decides whether it matters. Urgency decides whether it needs attention now.</p>
+<div class="grid2">
+<div class="q q1"><h4>Do now</h4><div class="count" id="c11">0</div><div class="sub">Important + urgent</div><div id="l11"></div></div>
+<div class="q q2"><h4>Schedule</h4><div class="count" id="c10">0</div><div class="sub">Important, not urgent</div><div id="l10"></div></div>
+<div class="q q3"><h4>Batch / delegate</h4><div class="count" id="c01">0</div><div class="sub">Urgent, less important</div><div id="l01"></div></div>
+<div class="q q4"><h4>Park or drop</h4><div class="count" id="c00">0</div><div class="sub">Neither urgent nor important</div><div id="l00"></div></div>
+</div>
+</div>
+<div class="card"><h2>All tasks</h2><div id="allTasks"></div></div>
+</section>
+
+<section id="view-add" class="view">
+<div class="card">
+<h2>Add task</h2>
+<label>Title</label><input id="f-title" placeholder="What needs doing?">
+<div class="grid2">
+<div><label>Due date</label><input id="f-due" type="date"></div>
+<div><label>Estimated minutes</label><input id="f-effort" type="number" min="1" placeholder="15"></div>
+</div>
+<div class="grid2">
+<div><label>Importance</label><select id="f-imp"><option value="1">High</option><option value="0">Low</option></select></div>
+<div><label>Urgency</label><select id="f-urg"><option value="1">Urgent</option><option value="0">Not urgent</option></select></div>
+</div>
+<label>Complexity</label><select id="f-cx"><option value="easy">Easy / low mental effort</option><option value="medium">Medium</option><option value="hard">Hard / needs focus</option></select>
+<label>Notes</label><textarea id="f-notes" rows="2" placeholder="Optional"></textarea>
+<div class="row" style="margin-top:14px"><button class="primary" onclick="addTask()">Add task</button><button class="ghost" onclick="show('next')">Cancel</button></div>
+</div>
+</section>
+
+<section id="view-settings" class="view">
+<div class="card">
+<h2>Settings</h2>
+<p>This prototype stores tasks in your phone’s browser storage. The next version will connect to a dedicated list in your personal Microsoft To Do account.</p>
+<label>Microsoft client ID (optional, for later)</label><input id="client-id" placeholder="Paste later">
+<button class="ghost" style="margin-top:12px" onclick="saveClientId()">Save</button>
+</div>
+<div class="card">
+<h2>How recommendations work</h2>
+<ul style="margin:0;padding-left:18px;color:var(--muted)">
+<li>Tasks are ranked by importance, urgency, due date and whether they fit the time you have.</li>
+<li>For very short slots, easy tasks are preferred.</li>
+<li>For longer slots, important tasks that can be meaningfully progressed are preferred.</li>
+<li>Unclassified tasks are surfaced in the Quick tidy-up card.</li>
+</ul>
+</div>
+</section>
+</main>
+
+<nav>
+<button class="active" data-v="next" onclick="show('next')"><span>⚡</span>Next</button>
+<button data-v="board" onclick="show('board')"><span>▦</span>Board</button>
+<button data-v="add" onclick="show('add')"><span>＋</span>Add</button>
+<button data-v="settings" onclick="show('settings')"><span>⚙</span>Settings</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='taskcoach_v1';
+const seed=[
+{id:1,title:'Book son’s daycare excursion payment',due:days(1),imp:1,urg:1,effort:5,cx:'easy',notes:'Due before Friday',done:false},
+{id:2,title:'Draft running plan for half-marathon',due:days(7),imp:1,urg:0,effort:45,cx:'medium',notes:'Include three runs and strength',done:false},
+{id:3,title:'Reply to plumber about bathroom quote',due:days(0),imp:1,urg:1,effort:10,cx:'easy',notes:'',done:false},
+{id:4,title:'Research flights for family trip',due:days(14),imp:1,urg:0,effort:90,cx:'hard',notes:'Compare dates and points',done:false},
+{id:5,title:'Put washing on',due:days(0),imp:0,urg:1,effort:5,cx:'easy',notes:'',done:false},
+{id:6,title:'Tidy garage shelving',due:null,imp:0,urg:0,effort:60,cx:'medium',notes:'',done:false},
+{id:7,title:'Update household budget',due:days(3),imp:1,urg:1,effort:30,cx:'medium',notes:'',done:false},
+{id:8,title:'Choose wine for Saturday dinner',due:days(4),imp:0,urg:0,effort:10,cx:'easy',notes:'',done:false}
+];
+let tasks=load();
+function days(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||seed}catch(e){return seed}}
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks));render()}
+function resetData(){if(confirm('Reset prototype data to the sample tasks?')){tasks=structuredClone(seed);save()}}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));render()}
+function addTask(){const title=document.getElementById('f-title').value.trim();if(!title)return toast('Add a title first');
+tasks.push({id:Date.now(),title,due:document.getElementById('f-due').value||null,imp:+document.getElementById('f-imp').value,urg:+document.getElementById('f-urg').value,effort:+document.getElementById('f-effort').value||null,cx:document.getElementById('f-cx').value,notes:document.getElementById('f-notes').value,done:false});
+document.getElementById('f-title').value='';document.getElementById('f-effort').value='';document.getElementById('f-notes').value='';toast('Task added');show('board')}
+function daysUntil(d){if(!d)return 999;return Math.ceil((new Date(d+'T23:59:59')-new Date())/86400000)}
+function score(t,minutes){let s=0;const du=daysUntil(t.due);
+s+=t.imp*45+s; s+=t.urg*25; if(du<=0)s+=40; else if(du<=2)s+=25; else if(du<=7)s+=12;
+if(t.effort&&t.effort<=minutes)s+=30; else if(t.effort&&t.effort<=minutes*1.5)s+=10; else if(t.effort&&t.effort>minutes)s-=Math.min(35,(t.effort-minutes)/2);
+if(minutes<=15&&t.cx==='easy')s+=12; if(minutes>=45&&t.cx==='hard'&&t.imp)s+=10; if(t.cx==='hard'&&minutes<=10)s-=10;
+return s}
+function recommend(minutes){const open=tasks.filter(t=>!t.done);const fits=open.filter(t=>!t.effort||t.effort<=minutes||minutes>=45);
+const ranked=fits.sort((a,b)=>score(b,minutes)-score(a,minutes)).slice(0,3);
+const unclassified=open.filter(t=>!t.effort||t.imp===undefined||t.urg===undefined);
+let html='';
+if(!ranked.length)html='<div class="card"><h2>No good match</h2><p class="sub">Add a task or classify a few existing ones.</p></div>';
+ranked.forEach((t,i)=>{const why=[];
+if(t.imp)why.push('important');if(t.urg)why.push('urgent');if(daysUntil(t.due)<=1)why.push('due soon');
+if(t.effort&&t.effort<=minutes)why.push('fits your time');if(minutes<=15&&t.cx==='easy')why.push('easy to start');
+html+=`<div class="task"><div class="spread"><h3>${i+1}. ${t.title}</h3><button class="small primary" onclick="complete(${t.id})">Done</button></div>
+<div class="meta">${pill(t.effort?t.effort+' min':'No effort set')}${pill(t.cx)}${pill(t.due?('Due '+fmt(t.due)):'No due date')}</div>
+<div class="sub">Why: ${why.join(', ')||'best available balance of priority and fit'}</div></div>`});
+if(unclassified.length)html+=`<div class="card"><h2>Needs classification</h2>${unclassified.slice(0,3).map(t=>`<div class="task"><h3>${t.title}</h3><div class="row"><button class="small" onclick="promptClassify(${t.id})">Classify</button></div></div>`).join('')}</div>`;
+document.getElementById('recommendation').innerHTML=html||'<div class="empty">Nothing here yet.</div>'}
+function pill(x){return `<span class="pill">${x}</span>`}
+function fmt(d){return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}
+function complete(id){const t=tasks.find(x=>x.id===id);if(t){t.done=true;save();toast('Completed: '+t.title)}}
+function promptClassify(id){const t=tasks.find(x=>x.id===id);if(!t)return;
+const e=prompt('Estimated minutes for:\n'+t.title,t.effort||15);if(e===null)return;
+const i=prompt('Importance? Type H for high or L for low.',t.imp?'H':'L');if(i===null)return;
+const u=prompt('Urgency? Type U for urgent or N for not urgent.',t.urg?'U':'N');if(u===null)return;
+t.effort=+e||15;t.imp=/h/i.test(i)?1:0;t.urg=/u/i.test(u)?1:0;save();toast('Updated')}
+function taskCard(t){return `<div class="task"><div class="spread"><h3>${t.title}</h3><div class="row"><button class="small ghost" onclick="promptClassify(${t.id})">Edit</button><button class="small primary" onclick="complete(${t.id})">Done</button></div></div>
+<div class="meta">${pill(t.imp?'High importance':'Low importance')}${pill(t.urg?'Urgent':'Not urgent')}${pill(t.effort?t.effort+' min':'No effort set')}${pill(t.cx)}${t.due?pill('Due '+fmt(t.due)):pill('No due date')}</div></div>`}
+function render(){
+const open=tasks.filter(t=>!t.done);
+['11','10','01','00'].forEach(k=>{const imp=+k[0],urg=+k[1];const list=open.filter(t=>t.imp===imp&&t.urg===urg);
+document.getElementById('c'+k).textContent=list.length;
+document.getElementById('l'+k).innerHTML=list.slice(0,3).map(t=>`<div class="sub">• ${t.title}</div>`).join('')});
+document.getElementById('allTasks').innerHTML=open.map(taskCard).join('')||'<div class="empty">No open tasks.</div>';
+const un=open.filter(t=>!t.effort||t.imp===undefined||t.urg===undefined);
+document.getElementById('classifyArea').innerHTML=un.length?un.slice(0,3).map(t=>`<div class="task"><h3>${t.title}</h3><div class="row"><button class="small primary" onclick="promptClassify(${t.id})">Classify now</button></div></div>`).join(''):'<div class="empty">Everything is classified. Nice.</div>';
+document.getElementById('syncStatus').textContent=`Prototype • ${open.length} open tasks • saved on this phone`}
+function saveClientId(){localStorage.setItem('taskcoach_client_id',document.getElementById('client-id').value);toast('Saved for future Microsoft connection')}
+document.getElementById('client-id').value=localStorage.getItem('taskcoach_client_id')||'';
+render();recommend(15);
+</script>
+</body>
+</html>
